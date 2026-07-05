@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useState } from "react";
 
 import { useLanguage } from "@/components/providers/language-provider";
@@ -99,15 +100,15 @@ export function ObjectiveGrid() {
                   {dictionary.objectives[selected].title}
                 </span>
               </p>
-              {/* Architecture hook: this will route to the questionnaire flow
-                  (/journey?objective=<id>) once it ships. */}
-              <a
-                href="#cta"
+              <Link
+                href={`/journey?objective=${
+                  OBJECTIVES.find((o) => o.id === selected)?.primaryObjective ?? ""
+                }`}
                 className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-navy-900 px-5 text-sm font-semibold text-white shadow-lg shadow-navy-900/20 transition-all hover:bg-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:bg-saffron-400 dark:text-navy-950 dark:hover:bg-saffron-300"
               >
                 {dictionary.hero.ctaPrimary}
                 <ArrowRight className="h-4 w-4" aria-hidden />
-              </a>
+              </Link>
             </div>
           </motion.div>
         ) : null}

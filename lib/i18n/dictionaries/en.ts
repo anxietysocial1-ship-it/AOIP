@@ -146,6 +146,38 @@ const en: Dictionary = {
       "Tell AOIP what you want to achieve and receive your personalised opportunity roadmap.",
     button: "Start My Opportunity Journey",
   },
+  journey: {
+    welcomeTitle: "Your opportunity journey",
+    welcomeMessage:
+      "In about 10 to 15 questions, AOIP will map the government opportunities you qualify for — each with a confidence score and a document checklist. Nothing you share leaves your profile.",
+    begin: "Let's begin",
+    back: "Back",
+    next: "Continue",
+    yes: "Yes",
+    no: "No",
+    progress: "Profile progress",
+    noticeTitle: "A quick heads-up",
+    reviewTitle: "Review your profile",
+    reviewSubtitle: "Tap any answer to change it.",
+    confirm: "Looks good — continue",
+    contactTitle: "Where should we send your roadmap?",
+    contactSubtitle:
+      "Leave your details and our team will share your personalised opportunity report and follow up with next steps.",
+    nameLabel: "Full name",
+    emailLabel: "Email address",
+    phoneLabel: "Phone number (optional)",
+    consentLabel:
+      "AOIP may contact me about matching opportunities and deadlines.",
+    submit: "Send me my report",
+    skipContact: "Skip for now",
+    doneTitle: "Your profile is complete!",
+    doneSubtitle:
+      "Our engine is preparing your personalised opportunity roadmap. We will be in touch soon.",
+    downloadProfile: "Download my profile (JSON)",
+    backHome: "Back to home",
+    errorRequired: "Please answer to continue.",
+    errorEmail: "Please enter a valid email address.",
+  },
   footer: {
     tagline: "Intelligence that turns objectives into opportunities.",
     about: "About",

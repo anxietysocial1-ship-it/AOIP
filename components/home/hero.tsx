@@ -2,6 +2,7 @@
 
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 import { NetworkCanvas } from "@/components/home/network-canvas";
 import { ObjectiveGrid } from "@/components/home/objective-grid";
@@ -70,13 +71,13 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          <a
-            href="#cta"
+          <Link
+            href="/journey"
             className="inline-flex h-12 items-center gap-2 rounded-full bg-navy-900 px-6 text-base font-semibold text-white shadow-lg shadow-navy-900/20 transition-all hover:bg-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:bg-saffron-400 dark:text-navy-950 dark:shadow-saffron-400/20 dark:hover:bg-saffron-300"
           >
             {dictionary.hero.ctaPrimary}
             <ArrowRight className="h-4 w-4" aria-hidden />
-          </a>
+          </Link>
           <a
             href="#how-it-works"
             className="inline-flex h-12 items-center rounded-full border border-slate-300 bg-white/70 px-6 text-base font-medium text-navy-900 backdrop-blur transition-colors hover:border-navy-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:border-white/30 dark:hover:bg-white/10"

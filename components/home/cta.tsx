@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 import { useLanguage } from "@/components/providers/language-provider";
 import { Section } from "@/components/ui/section";
@@ -21,15 +22,13 @@ export function Cta() {
         <p className="relative mx-auto mt-4 max-w-xl text-pretty text-lg text-slate-300">
           {dictionary.cta.subheading}
         </p>
-        {/* Architecture hook: becomes the entry point of the questionnaire
-            flow once authentication ships. */}
-        <a
-          href="#objectives"
+        <Link
+          href="/journey"
           className="relative mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-saffron-400 px-7 text-base font-semibold text-navy-950 shadow-lg shadow-saffron-400/30 transition-all hover:bg-saffron-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-900"
         >
           {dictionary.cta.button}
           <ArrowRight className="h-4 w-4" aria-hidden />
-        </a>
+        </Link>
       </div>
     </Section>
   );

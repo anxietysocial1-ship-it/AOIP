@@ -70,6 +70,34 @@ export interface Dictionary {
     subheading: string;
     button: string;
   };
+  journey: {
+    welcomeTitle: string;
+    welcomeMessage: string;
+    begin: string;
+    back: string;
+    next: string;
+    yes: string;
+    no: string;
+    progress: string;
+    noticeTitle: string;
+    reviewTitle: string;
+    reviewSubtitle: string;
+    confirm: string;
+    contactTitle: string;
+    contactSubtitle: string;
+    nameLabel: string;
+    emailLabel: string;
+    phoneLabel: string;
+    consentLabel: string;
+    submit: string;
+    skipContact: string;
+    doneTitle: string;
+    doneSubtitle: string;
+    downloadProfile: string;
+    backHome: string;
+    errorRequired: string;
+    errorEmail: string;
+  };
   footer: {
     tagline: string;
     about: string;

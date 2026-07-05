@@ -20,6 +20,17 @@ achieve?"** and maps the answer to the best opportunities across India.
 - **Dark & light mode**, WCAG-minded focus states, reduced-motion
   support, animated opportunity-network background, scroll reveals and
   count-up statistics.
+- **Adaptive questionnaire journey** (`/journey`) driven by the
+  Applicant Intelligence Engine artifacts: welcome framing, objective
+  pre-answered from the homepage card, staged mandatory questions
+  (applicant → location → foundation track), an information-gain
+  adaptive loop, restriction notices from elimination rules, cross-field
+  validation, document check, preferences, one-screen review with
+  inline edit, and completion.
+- **Lead capture** — a contact step (name, email, phone, consent)
+  before completion. Leads are stored in `localStorage` (`aoip.leads`),
+  downloadable as JSON, and emailed to the team inbox via FormSubmit so
+  applicants can be contacted later.
 
 ## Tech stack
 
@@ -31,8 +42,24 @@ Lucide Icons · next-themes
 ```bash
 npm install
 npm run dev    # http://localhost:3000
-npm run build  # production build
+npm run build  # static export to ./out
 ```
+
+## Hosting
+
+The site is a full static export (`output: "export"`).
+`.github/workflows/deploy.yml` builds with
+`NEXT_PUBLIC_BASE_PATH=/AOIP` and publishes `out/` to GitHub Pages on
+every push to the deploy branches:
+
+> https://anxietysocial1-ship-it.github.io/AOIP/
+
+Lead emails are delivered through FormSubmit to the team inbox
+configured in `lib/engine/lead.ts`. FormSubmit sends a one-time
+activation email on the first submission from the live domain — click
+it once and every subsequent lead arrives as a formatted email.
+Regardless of activation, leads are always kept in the visitor's
+`localStorage` and downloadable from the completion screen.
 
 ## Structure
 

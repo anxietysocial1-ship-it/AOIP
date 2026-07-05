@@ -2,6 +2,7 @@
 
 import { Menu, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useState } from "react";
 
 import { LanguageBanner } from "@/components/layout/language-banner";
@@ -55,12 +56,12 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher openSignal={switcherSignal} />
             <ThemeToggle />
-            <a
-              href="#cta"
+            <Link
+              href="/journey"
               className="hidden h-10 items-center rounded-full bg-navy-900 px-4 text-sm font-semibold text-white shadow-lg shadow-navy-900/20 transition-colors hover:bg-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:bg-saffron-400 dark:text-navy-950 dark:shadow-saffron-400/20 dark:hover:bg-saffron-300 sm:inline-flex"
             >
               {dictionary.nav.cta}
-            </a>
+            </Link>
             <button
               type="button"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -97,13 +98,13 @@ export function Navbar() {
                     {dictionary.nav[link.key]}
                   </a>
                 ))}
-                <a
-                  href="#cta"
+                <Link
+                  href="/journey"
                   onClick={() => setMenuOpen(false)}
                   className="mt-2 rounded-xl bg-navy-900 px-3 py-2.5 text-center text-sm font-semibold text-white dark:bg-saffron-400 dark:text-navy-950"
                 >
                   {dictionary.nav.cta}
-                </a>
+                </Link>
               </div>
             </motion.div>
           ) : null}
