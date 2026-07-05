@@ -8,9 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -19,9 +17,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,16 +33,14 @@ jobs:
         env:
           NEXT_PUBLIC_BASE_PATH: /AOIP
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      - name: Disable Jekyll processing
+        run: touch out/.nojekyll
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      # Publishes ./out to the gh-pages branch; GitHub Pages serves it
+      # (branch mode is auto-enabled for public repos when the gh-pages
+      # branch exists).
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: out
-
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
