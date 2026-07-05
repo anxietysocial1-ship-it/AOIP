@@ -46,7 +46,32 @@ components/
 lib/
   i18n/                 # Locale config, Dictionary type, 12 dictionaries
   data/objectives.ts    # Objective card definitions
+  data/questionnaire/   # Applicant Intelligence Engine artifacts
 ```
+
+## Questionnaire engine data
+
+`lib/data/questionnaire/` holds the Applicant Intelligence Engine
+artifacts consumed by the upcoming questionnaire flow:
+
+- `questions.json` — 253 questions across 23 modules (Objective
+  Discovery, Applicant Context, MSME Classification, Financial Profile,
+  Export Readiness, …) with input types, sensitivity levels and
+  information-gain metadata.
+- `rules.json` — derivation, branch, elimination and validation rules
+  plus the information-gain configuration that decides which question to
+  ask next.
+- `flow.json` — the questionnaire state machine (20 states, from
+  `S-000-WELCOME` to `S-120-COMPLETE`).
+
+`lib/data/questionnaire/index.ts` exposes typed accessors
+(`questionnaire`, `rules`, `flow`, `getQuestion`, `getModuleQuestions`,
+`getPrimaryObjectiveValues`). Keep these imports server-side — the raw
+artifacts total ~370 KB and should not enter the client bundle.
+
+Each homepage objective card carries a `primaryObjective` value that
+matches the engine's Q-OBJ-001 answer vocabulary, so a card selection
+can pre-answer the first questionnaire question.
 
 ## Future architecture hooks
 

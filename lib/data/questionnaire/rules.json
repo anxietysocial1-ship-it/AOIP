@@ -1,0 +1,2293 @@
+{
+  "metadata": {
+    "artifact": "rules.json",
+    "version": "1.0.0",
+    "generated_for": "AOIP Applicant Intelligence Engine",
+    "depends_on": {
+      "questions": "questions.json v1.0.0"
+    },
+    "consumed_by": "Deterministic Interview Engine (database-primacy invariant: these rules govern question flow only; eligibility verdicts remain exclusively with the SER rule engine)",
+    "condition_operators": [
+      "EQ",
+      "NEQ",
+      "GT",
+      "GTE",
+      "LT",
+      "LTE",
+      "IN",
+      "NOT_IN",
+      "BETWEEN",
+      "CONTAINS",
+      "NOT_CONTAINS",
+      "IS_ANSWERED",
+      "IS_NOT_ANSWERED",
+      "CONSISTENT_WITH_BAND"
+    ],
+    "rule_precedence": "lower priority number evaluates first; suppression beats unlock at equal priority; elimination rules always evaluate"
+  },
+  "derivation_rules": [
+    {
+      "rule_id": "DR-001",
+      "derived_attribute": "business_vintage_years",
+      "strategy": "arithmetic",
+      "expression": "current_year - incorporation_year",
+      "inputs": [
+        "incorporation_year"
+      ],
+      "output_type": "number",
+      "rationale": "Business age drives startup-window (under 10 years) and vintage-based credit eligibility."
+    },
+    {
+      "rule_id": "DR-002",
+      "derived_attribute": "msme_classification",
+      "strategy": "threshold_matrix",
+      "inputs": [
+        "plant_machinery_investment_inr",
+        "annual_turnover_inr"
+      ],
+      "output_type": "enum",
+      "output_values": [
+        "micro",
+        "small",
+        "medium",
+        "not_msme"
+      ],
+      "matrix": [
+        {
+          "class": "micro",
+          "investment_max_inr": 10000000,
+          "turnover_max_inr": 50000000
+        },
+        {
+          "class": "small",
+          "investment_max_inr": 100000000,
+          "turnover_max_inr": 500000000
+        },
+        {
+          "class": "medium",
+          "investment_max_inr": 500000000,
+          "turnover_max_inr": 2500000000
+        }
+      ],
+      "evaluation": "lowest class whose BOTH thresholds are satisfied; exceeding either threshold moves the unit up one class; exceeding medium thresholds yields not_msme",
+      "rationale": "Composite investment plus turnover criteria per MSME classification norms; the classification is the master key attribute for MSME-tagged schemes."
+    },
+    {
+      "rule_id": "DR-003",
+      "derived_attribute": "is_north_east_region",
+      "strategy": "membership",
+      "inputs": [
+        "project_state",
+        "state"
+      ],
+      "output_type": "boolean",
+      "member_values": [
+        "arunachal_pradesh",
+        "assam",
+        "manipur",
+        "meghalaya",
+        "mizoram",
+        "nagaland",
+        "sikkim",
+        "tripura"
+      ],
+      "evaluation": "true if project_state (or state when project_state is unanswered) is in member_values",
+      "rationale": "NER units get enhanced subsidy rates and dedicated schemes."
+    },
+    {
+      "rule_id": "DR-004",
+      "derived_attribute": "is_hill_state",
+      "strategy": "membership",
+      "inputs": [
+        "project_state",
+        "state"
+      ],
+      "output_type": "boolean",
+      "member_values": [
+        "himachal_pradesh",
+        "uttarakhand",
+        "jammu_and_kashmir",
+        "ladakh",
+        "arunachal_pradesh",
+        "assam",
+        "manipur",
+        "meghalaya",
+        "mizoram",
+        "nagaland",
+        "sikkim",
+        "tripura"
+      ],
+      "evaluation": "true if project_state (or state when project_state is unanswered) is in member_values",
+      "rationale": "Hill and Himalayan states carry special-category benefits in several central schemes."
+    },
+    {
+      "rule_id": "DR-005",
+      "derived_attribute": "farmer_category",
+      "strategy": "mapping",
+      "inputs": [
+        "land_holding_acres"
+      ],
+      "output_type": "enum",
+      "output_values": [
+        "marginal",
+        "small",
+        "other",
+        "landless"
+      ],
+      "mapping": {
+        "under_2_5_acres": "marginal",
+        "2_5_5_acres": "small",
+        "5_10_acres": "other",
+        "over_10_acres": "other",
+        "landless": "landless"
+      },
+      "rationale": "Marginal and small farmer status raises subsidy percentages in agri schemes."
+    },
+    {
+      "rule_id": "DR-006",
+      "derived_attribute": "mudra_category",
+      "strategy": "banding",
+      "inputs": [
+        "loan_amount_required"
+      ],
+      "output_type": "enum",
+      "output_values": [
+        "shishu",
+        "kishore",
+        "tarun",
+        "tarun_plus",
+        "beyond_mudra"
+      ],
+      "bands": [
+        {
+          "max_inr": 50000,
+          "value": "shishu"
+        },
+        {
+          "max_inr": 500000,
+          "value": "kishore"
+        },
+        {
+          "max_inr": 1000000,
+          "value": "tarun"
+        },
+        {
+          "max_inr": 2000000,
+          "value": "tarun_plus"
+        },
+        {
+          "max_inr": null,
+          "value": "beyond_mudra"
+        }
+      ],
+      "rationale": "Loan quantum instantly routes between micro-credit and larger credit scheme families."
+    },
+    {
+      "rule_id": "DR-007",
+      "derived_attribute": "is_women_led",
+      "strategy": "boolean_logic",
+      "inputs": [
+        "gender",
+        "women_ownership_percent",
+        "women_in_management"
+      ],
+      "output_type": "boolean",
+      "evaluation": "true if gender = female OR women_ownership_percent in [100_women, 51_99_women] OR women_in_management = true",
+      "rationale": "Single flag consumed by all women-entrepreneurship scheme tags."
+    },
+    {
+      "rule_id": "DR-008",
+      "derived_attribute": "is_startup_age_eligible",
+      "strategy": "boolean_logic",
+      "inputs": [
+        "business_vintage_years"
+      ],
+      "output_type": "boolean",
+      "evaluation": "true if business_vintage_years <= 10",
+      "rationale": "Startup-definition window is 10 years from incorporation."
+    },
+    {
+      "rule_id": "DR-009",
+      "derived_attribute": "youth_category",
+      "strategy": "banding",
+      "inputs": [
+        "age_years"
+      ],
+      "output_type": "enum",
+      "output_values": [
+        "minor",
+        "youth",
+        "adult",
+        "senior"
+      ],
+      "bands": [
+        {
+          "max": 17,
+          "value": "minor"
+        },
+        {
+          "max": 35,
+          "value": "youth"
+        },
+        {
+          "max": 59,
+          "value": "adult"
+        },
+        {
+          "max": null,
+          "value": "senior"
+        }
+      ],
+      "rationale": "Youth-targeted schemes commonly use an 18-to-35 window."
+    },
+    {
+      "rule_id": "DR-010",
+      "derived_attribute": "is_special_category_applicant",
+      "strategy": "boolean_logic",
+      "inputs": [
+        "social_category",
+        "differently_abled",
+        "ex_serviceman",
+        "is_women_led",
+        "minority_status"
+      ],
+      "output_type": "boolean",
+      "evaluation": "true if social_category in [sc, st] OR differently_abled = true OR ex_serviceman = true OR is_women_led = true OR minority_status = yes",
+      "rationale": "Special-category applicants get relaxed own-contribution and enhanced subsidy in margin-money schemes."
+    }
+  ],
+  "branch_rules": [
+    {
+      "rule_id": "BR-001",
+      "name": "Business owner unlocks business foundation",
+      "priority": 10,
+      "when": {
+        "any": [
+          {
+            "attribute": "applicant_type",
+            "operator": "IN",
+            "values": [
+              "business_owner",
+              "business_representative"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "BUS"
+        },
+        {
+          "action": "unlock_module",
+          "module": "MSME"
+        },
+        {
+          "action": "unlock_module",
+          "module": "SEC"
+        },
+        {
+          "action": "unlock_module",
+          "module": "FIN"
+        }
+      ],
+      "rationale": "Operating businesses need constitution, classification, sector, and financial context before anything else."
+    },
+    {
+      "rule_id": "BR-002",
+      "name": "Aspiring entrepreneur unlocks new-venture path",
+      "priority": 10,
+      "when": {
+        "all": [
+          {
+            "attribute": "applicant_type",
+            "operator": "EQ",
+            "value": "aspiring_entrepreneur"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "BUS"
+        },
+        {
+          "action": "unlock_module",
+          "module": "SEC"
+        },
+        {
+          "action": "unlock_module",
+          "module": "DEM"
+        },
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-CRD-001"
+          ]
+        }
+      ],
+      "rationale": "New ventures branch to idea-stage questions; demographics matter because most new-venture schemes are category-sensitive."
+    },
+    {
+      "rule_id": "BR-003",
+      "name": "Farmer unlocks agriculture module",
+      "priority": 10,
+      "when": {
+        "all": [
+          {
+            "attribute": "applicant_type",
+            "operator": "EQ",
+            "value": "farmer"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "AGR"
+        },
+        {
+          "action": "unlock_module",
+          "module": "DEM"
+        },
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-CRD-001"
+          ]
+        }
+      ],
+      "rationale": "Farmer route leads with agri profile and demographics (land, category) over business constitution."
+    },
+    {
+      "rule_id": "BR-004",
+      "name": "Researcher unlocks research module",
+      "priority": 10,
+      "when": {
+        "all": [
+          {
+            "attribute": "applicant_type",
+            "operator": "EQ",
+            "value": "researcher"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "RES"
+        }
+      ],
+      "rationale": "Researchers get fellowship and grant routing before any business framing."
+    },
+    {
+      "rule_id": "BR-005",
+      "name": "Student unlocks research and startup modules",
+      "priority": 10,
+      "when": {
+        "all": [
+          {
+            "attribute": "applicant_type",
+            "operator": "EQ",
+            "value": "student"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "RES"
+        },
+        {
+          "action": "unlock_module",
+          "module": "STA"
+        }
+      ],
+      "rationale": "Students straddle fellowships and student-founder startup schemes."
+    },
+    {
+      "rule_id": "BR-006",
+      "name": "NGO representative unlocks social module",
+      "priority": 10,
+      "when": {
+        "all": [
+          {
+            "attribute": "applicant_type",
+            "operator": "EQ",
+            "value": "ngo_social"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "SOC"
+        }
+      ],
+      "rationale": "Social organisations have an entirely separate funding universe (grants-in-aid, CSR)."
+    },
+    {
+      "rule_id": "BR-007",
+      "name": "Individual explorer gets demographic-first routing",
+      "priority": 10,
+      "when": {
+        "all": [
+          {
+            "attribute": "applicant_type",
+            "operator": "EQ",
+            "value": "individual_other"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "DEM"
+        },
+        {
+          "action": "unlock_module",
+          "module": "SKL"
+        }
+      ],
+      "rationale": "Without a business anchor, welfare, self-employment, and skilling eligibility is demographic-driven."
+    },
+    {
+      "rule_id": "BR-010",
+      "name": "Export objective unlocks export module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "EQ",
+            "value": "increase_exports"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "increase_exports"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "EXP"
+        },
+        {
+          "action": "unlock_module",
+          "module": "QC"
+        }
+      ],
+      "rationale": "Export intent triggers export readiness and (frequently mandatory) certification questions."
+    },
+    {
+      "rule_id": "BR-011",
+      "name": "Machinery and facility objectives unlock capital module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "IN",
+            "values": [
+              "purchase_machinery",
+              "establish_manufacturing_facility",
+              "develop_industrial_infrastructure"
+            ]
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "purchase_machinery"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "CAP"
+        },
+        {
+          "action": "unlock_module",
+          "module": "CRD"
+        },
+        {
+          "action": "unlock_module",
+          "module": "FIN"
+        }
+      ],
+      "rationale": "Capex goals require project cost, machinery, land, and funding structure."
+    },
+    {
+      "rule_id": "BR-012",
+      "name": "Working-capital and funding objectives unlock credit module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "IN",
+            "values": [
+              "obtain_working_capital",
+              "obtain_government_funding"
+            ]
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "obtain_working_capital"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "CRD"
+        },
+        {
+          "action": "unlock_module",
+          "module": "FIN"
+        }
+      ],
+      "rationale": "Credit need routes straight to loan sizing, collateral, and repayment context."
+    },
+    {
+      "rule_id": "BR-013",
+      "name": "Energy objectives unlock green module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "IN",
+            "values": [
+              "reduce_energy_cost",
+              "green_manufacturing"
+            ]
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "reduce_energy_cost"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "green_manufacturing"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "GRN"
+        }
+      ],
+      "rationale": "Energy goals map to renewables, efficiency, and green-certification schemes."
+    },
+    {
+      "rule_id": "BR-014",
+      "name": "Hiring and training objectives unlock employment and skilling",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "IN",
+            "values": [
+              "hire_employees",
+              "train_workforce"
+            ]
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "hire_employees"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "train_workforce"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "EMP"
+        },
+        {
+          "action": "unlock_module",
+          "module": "SKL"
+        }
+      ],
+      "rationale": "Employment-linked incentives and subsidised training share workforce context."
+    },
+    {
+      "rule_id": "BR-015",
+      "name": "Digital and innovation objectives unlock technology module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "IN",
+            "values": [
+              "adopt_digital_technology",
+              "innovation_support"
+            ]
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "adopt_digital_technology"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "TEC"
+        }
+      ],
+      "rationale": "Digital adoption and innovation support both hinge on the technology profile."
+    },
+    {
+      "rule_id": "BR-016",
+      "name": "Certification objective unlocks quality module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "EQ",
+            "value": "obtain_quality_certification"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "obtain_quality_certification"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "QC"
+        }
+      ],
+      "rationale": "Certification reimbursement schemes need the certification inventory and plan."
+    },
+    {
+      "rule_id": "BR-017",
+      "name": "Startup objectives unlock startup module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "IN",
+            "values": [
+              "startup_support",
+              "start_new_business",
+              "innovation_support"
+            ]
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "startup_support"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "STA"
+        }
+      ],
+      "rationale": "Startup-family schemes (recognition, seed fund, tax) need the startup profile."
+    },
+    {
+      "rule_id": "BR-018",
+      "name": "Women entrepreneurship objective unlocks women module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "EQ",
+            "value": "women_entrepreneurship"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "women_entrepreneurship"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "WOM"
+        }
+      ],
+      "rationale": "Direct route into the women-entrepreneurship scheme family."
+    },
+    {
+      "rule_id": "BR-019",
+      "name": "Agriculture processing objective unlocks agri module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "EQ",
+            "value": "agriculture_processing"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "agriculture_processing"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "AGR"
+        }
+      ],
+      "rationale": "Food-processing schemes require crop, processing-type, and infrastructure context."
+    },
+    {
+      "rule_id": "BR-020",
+      "name": "Social enterprise objective unlocks social module",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "EQ",
+            "value": "social_enterprise"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "social_enterprise"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "SOC"
+        }
+      ],
+      "rationale": "Social ventures route to grants-in-aid and CSR context."
+    },
+    {
+      "rule_id": "BR-021",
+      "name": "Research commercialisation unlocks research, tech, and startup",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "EQ",
+            "value": "commercialize_research"
+          },
+          {
+            "attribute": "secondary_objectives",
+            "operator": "CONTAINS",
+            "value": "commercialize_research"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "RES"
+        },
+        {
+          "action": "unlock_module",
+          "module": "TEC"
+        },
+        {
+          "action": "unlock_module",
+          "module": "STA"
+        }
+      ],
+      "rationale": "Lab-to-market schemes sit at the intersection of research maturity, IP, and startup formation."
+    },
+    {
+      "rule_id": "BR-030",
+      "name": "Female or women-owned profile unlocks women module",
+      "priority": 30,
+      "when": {
+        "any": [
+          {
+            "attribute": "gender",
+            "operator": "EQ",
+            "value": "female"
+          },
+          {
+            "attribute": "is_women_led",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "WOM"
+        }
+      ],
+      "rationale": "Women-focused schemes should surface even when not explicitly asked for."
+    },
+    {
+      "rule_id": "BR-031",
+      "name": "Existing exporter unlocks export detail",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "export_status",
+            "operator": "IN",
+            "values": [
+              "exporting_regular",
+              "exported_occasionally"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-EXP-003",
+            "Q-EXP-004",
+            "Q-EXP-007",
+            "Q-EXP-011"
+          ]
+        }
+      ],
+      "rationale": "Export-history questions are meaningless for non-exporters; asked only once exporting is confirmed."
+    },
+    {
+      "rule_id": "BR-032",
+      "name": "Operational business unlocks employment context",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "business_stage",
+            "operator": "IN",
+            "values": [
+              "operational",
+              "growth",
+              "stressed"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "EMP"
+        }
+      ],
+      "rationale": "Headcount and EPFO status only apply to running businesses."
+    },
+    {
+      "rule_id": "BR-033",
+      "name": "Manufacturing sector unlocks manufacturing depth",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "primary_sector",
+            "operator": "EQ",
+            "value": "manufacturing"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-SEC-002",
+            "Q-SEC-007",
+            "Q-SEC-011",
+            "Q-SEC-012"
+          ]
+        },
+        {
+          "action": "unlock_module",
+          "module": "QC"
+        },
+        {
+          "action": "unlock_module",
+          "module": "GRN"
+        }
+      ],
+      "rationale": "Manufacturers face pollution categorisation, capacity, quality, and energy questions that services do not."
+    },
+    {
+      "rule_id": "BR-034",
+      "name": "Services sector unlocks services depth",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "primary_sector",
+            "operator": "EQ",
+            "value": "services"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-SEC-003"
+          ]
+        }
+      ],
+      "rationale": "Services sub-sector drives services-specific scheme tags."
+    },
+    {
+      "rule_id": "BR-035",
+      "name": "Agri-allied sector unlocks agri module",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "primary_sector",
+            "operator": "EQ",
+            "value": "agri_allied"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "AGR"
+        }
+      ],
+      "rationale": "Agri-allied businesses qualify for the agriculture scheme family regardless of stated objective."
+    },
+    {
+      "rule_id": "BR-036",
+      "name": "Food processing subsector deepens agri context",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "manufacturing_subsector",
+            "operator": "EQ",
+            "value": "food_processing"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "AGR"
+        },
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-AGR-007",
+            "Q-AGR-008",
+            "Q-AGR-009",
+            "Q-AGR-010"
+          ]
+        }
+      ],
+      "rationale": "Food processors are the target of PMFME-style schemes; ODOP and existing-unit status decide priority."
+    },
+    {
+      "rule_id": "BR-037",
+      "name": "Loan need unlocks credit detail",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "loan_required",
+            "operator": "IN",
+            "values": [
+              "yes_definitely",
+              "maybe_loan"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-CRD-002",
+            "Q-CRD-003",
+            "Q-CRD-004",
+            "Q-CRD-005",
+            "Q-CRD-006",
+            "Q-CRD-007",
+            "Q-CRD-008",
+            "Q-CRD-009",
+            "Q-CRD-010"
+          ]
+        },
+        {
+          "action": "unlock_module",
+          "module": "FIN"
+        }
+      ],
+      "rationale": "Credit sizing and financial history only apply once a loan is in play."
+    },
+    {
+      "rule_id": "BR-038",
+      "name": "Existing loans unlock repayment context",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "existing_loans",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-FIN-003",
+            "Q-FIN-004"
+          ]
+        }
+      ],
+      "rationale": "Outstanding-amount and repayment-status questions follow only from an affirmative."
+    },
+    {
+      "rule_id": "BR-039",
+      "name": "Prior scheme application unlocks outcome probing",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "prior_scheme_applied",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-OBJ-007",
+            "Q-OBJ-008"
+          ]
+        }
+      ],
+      "rationale": "Outcome and category of past applications guide double-dip checks and guidance depth."
+    },
+    {
+      "rule_id": "BR-040",
+      "name": "Disability unlocks certificate percentage",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "differently_abled",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-APP-010"
+          ]
+        }
+      ],
+      "rationale": "Benefit thresholds begin at 40 percent certified disability."
+    },
+    {
+      "rule_id": "BR-041",
+      "name": "Reserved category unlocks certificate check",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "social_category",
+            "operator": "IN",
+            "values": [
+              "sc",
+              "st",
+              "obc"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-DEM-015"
+          ]
+        }
+      ],
+      "rationale": "Category benefits require a valid certificate; checking early feeds the document checklist."
+    },
+    {
+      "rule_id": "BR-042",
+      "name": "EWS category unlocks EWS certificate check",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "social_category",
+            "operator": "EQ",
+            "value": "ews"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-DEM-016"
+          ]
+        }
+      ],
+      "rationale": "EWS benefits require the income and asset certificate."
+    },
+    {
+      "rule_id": "BR-043",
+      "name": "Different project location unlocks project state",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "operating_location_same",
+            "operator": "EQ",
+            "value": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-LOC-007"
+          ]
+        }
+      ],
+      "rationale": "Eligibility follows project location; only asked when it differs from residence."
+    },
+    {
+      "rule_id": "BR-044",
+      "name": "Udyam registered unlocks classification cross-check",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "udyam_registered",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-MSME-006"
+          ]
+        }
+      ],
+      "rationale": "Certificate classification cross-validates the derived MSME class."
+    },
+    {
+      "rule_id": "BR-045",
+      "name": "Machinery plan unlocks machinery detail",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "machinery_purchase_planned",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-CAP-002",
+            "Q-CAP-003",
+            "Q-CAP-004",
+            "Q-CAP-005"
+          ]
+        }
+      ],
+      "rationale": "Machinery cost, condition, and origin apply only to a confirmed purchase plan."
+    },
+    {
+      "rule_id": "BR-046",
+      "name": "R&D activity unlocks R&D depth",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "rd_activity",
+            "operator": "IN",
+            "values": [
+              "dedicated_rd",
+              "informal_rd"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-TEC-008",
+            "Q-TEC-009"
+          ]
+        }
+      ],
+      "rationale": "R&D spend share and collaborations follow only from active R&D."
+    },
+    {
+      "rule_id": "BR-047",
+      "name": "Farming status unlocks land and identity questions",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "farmer_status",
+            "operator": "IN",
+            "values": [
+              "own_cultivator",
+              "tenant_farmer",
+              "agri_labour",
+              "landless_allied"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-AGR-002",
+            "Q-AGR-003",
+            "Q-AGR-004",
+            "Q-AGR-006",
+            "Q-AGR-013"
+          ]
+        }
+      ],
+      "rationale": "Land holding, KCC, and crops apply to active farmers only."
+    },
+    {
+      "rule_id": "BR-048",
+      "name": "Idea-stage suppresses operational-history questions",
+      "priority": 15,
+      "when": {
+        "all": [
+          {
+            "attribute": "business_stage",
+            "operator": "IN",
+            "values": [
+              "idea",
+              "planning"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "suppress_questions",
+          "question_ids": [
+            "Q-BUS-003",
+            "Q-BUS-004",
+            "Q-BUS-005",
+            "Q-BUS-006",
+            "Q-BUS-008",
+            "Q-BUS-009",
+            "Q-BUS-013",
+            "Q-BUS-014",
+            "Q-BUS-015",
+            "Q-BUS-016",
+            "Q-BUS-017",
+            "Q-BUS-018",
+            "Q-MSME-001",
+            "Q-MSME-002",
+            "Q-MSME-003",
+            "Q-MSME-004",
+            "Q-MSME-005",
+            "Q-MSME-006",
+            "Q-SEC-012",
+            "Q-EMP-001",
+            "Q-EMP-002",
+            "Q-EMP-003",
+            "Q-EMP-006",
+            "Q-EMP-007",
+            "Q-FIN-014",
+            "Q-FIN-015"
+          ]
+        }
+      ],
+      "rationale": "Asking a pre-revenue founder for turnover, ITRs, or EPFO status breaks trust and adds zero information."
+    },
+    {
+      "rule_id": "BR-049",
+      "name": "Idea stage sets new-unit defaults",
+      "priority": 15,
+      "when": {
+        "all": [
+          {
+            "attribute": "business_stage",
+            "operator": "IN",
+            "values": [
+              "idea",
+              "planning"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "set_attribute_default",
+          "attribute": "msme_classification",
+          "value": "micro"
+        },
+        {
+          "action": "set_attribute_default",
+          "attribute": "annual_turnover_inr",
+          "value": 0
+        }
+      ],
+      "rationale": "New units are micro-class by definition until investment says otherwise; avoids dead-end rule evaluation."
+    },
+    {
+      "rule_id": "BR-050",
+      "name": "Non-business applicants skip enterprise-only modules",
+      "priority": 15,
+      "when": {
+        "all": [
+          {
+            "attribute": "applicant_type",
+            "operator": "IN",
+            "values": [
+              "researcher",
+              "student",
+              "ngo_social",
+              "individual_other"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "suppress_module",
+          "module": "MSME"
+        },
+        {
+          "action": "suppress_module",
+          "module": "EXP"
+        },
+        {
+          "action": "suppress_module",
+          "module": "CAP"
+        }
+      ],
+      "rationale": "MSME classification, exports, and capex are meaningless without an enterprise; explicit objectives can re-unlock them at higher priority."
+    },
+    {
+      "rule_id": "BR-051",
+      "name": "Green interest unlocks solar sizing",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "renewable_adoption_plan",
+            "operator": "IN",
+            "values": [
+              "actively_planning",
+              "interested_renewable"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-GRN-004"
+          ]
+        }
+      ],
+      "rationale": "Capacity slab only matters once renewable interest is confirmed."
+    },
+    {
+      "rule_id": "BR-052",
+      "name": "No certifications unlocks barrier probing",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "quality_certifications_held",
+            "operator": "CONTAINS",
+            "value": "none_cert"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-QC-007"
+          ]
+        }
+      ],
+      "rationale": "Understanding the barrier (cost vs knowledge) picks between reimbursement and handholding schemes."
+    },
+    {
+      "rule_id": "BR-053",
+      "name": "Export intent from scratch unlocks first-step questions",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "export_status",
+            "operator": "IN",
+            "values": [
+              "ready_to_start",
+              "curious"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-EXP-002",
+            "Q-EXP-005",
+            "Q-EXP-008",
+            "Q-EXP-009",
+            "Q-EXP-010",
+            "Q-EXP-012"
+          ]
+        }
+      ],
+      "rationale": "New-to-export journey needs IEC, target market, and obstacle context, not RCMC history."
+    },
+    {
+      "rule_id": "BR-054",
+      "name": "Land needed unlocks infrastructure preferences",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "land_requirement",
+            "operator": "IN",
+            "values": [
+              "need_land",
+              "applied_allotment"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-CAP-011",
+            "Q-LOC-008"
+          ]
+        }
+      ],
+      "rationale": "Land seekers should see plug-and-play and industrial-park options."
+    },
+    {
+      "rule_id": "BR-055",
+      "name": "Growth or expansion unlocks capital, credit, and employment",
+      "priority": 20,
+      "when": {
+        "any": [
+          {
+            "attribute": "primary_objective",
+            "operator": "EQ",
+            "value": "expand_existing_business"
+          },
+          {
+            "attribute": "takeover_or_greenfield",
+            "operator": "IN",
+            "values": [
+              "expansion",
+              "diversification"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "CAP"
+        },
+        {
+          "action": "unlock_module",
+          "module": "CRD"
+        },
+        {
+          "action": "unlock_module",
+          "module": "FIN"
+        },
+        {
+          "action": "unlock_module",
+          "module": "EMP"
+        }
+      ],
+      "rationale": "Expansion routes through capex, credit, and incremental-employment incentives."
+    },
+    {
+      "rule_id": "BR-056",
+      "name": "SHG membership unlocks group-enterprise context",
+      "priority": 40,
+      "when": {
+        "any": [
+          {
+            "attribute": "shg_member_self",
+            "operator": "EQ",
+            "value": true
+          },
+          {
+            "attribute": "shg_linked_enterprise",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-WOM-003"
+          ]
+        }
+      ],
+      "rationale": "SHG-linked enterprises access group credit lines with distinct terms."
+    },
+    {
+      "rule_id": "BR-057",
+      "name": "Commercialisation intent bridges research to startup",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "commercialization_intent",
+            "operator": "IN",
+            "values": [
+              "spin_off_startup",
+              "industry_partner",
+              "license_out"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "STA"
+        },
+        {
+          "action": "unlock_module",
+          "module": "TEC"
+        }
+      ],
+      "rationale": "Translational intent activates prototype-grant and startup-formation questions."
+    },
+    {
+      "rule_id": "BR-058",
+      "name": "Document module unlocks near completion",
+      "priority": 50,
+      "when": {
+        "all": [
+          {
+            "attribute": "session_metric.questions_answered",
+            "operator": "GTE",
+            "value": 12
+          },
+          {
+            "attribute": "session_metric.eligibility_entropy_bits",
+            "operator": "LTE",
+            "value": 1.2
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_module",
+          "module": "DOC"
+        },
+        {
+          "action": "unlock_module",
+          "module": "PRF"
+        }
+      ],
+      "rationale": "Document readiness is asked last (peak-end rule): quick yes-no wins create a strong finish and feed the checklist."
+    },
+    {
+      "rule_id": "BR-059",
+      "name": "Artisan status unlocks craft-scheme context",
+      "priority": 30,
+      "when": {
+        "all": [
+          {
+            "attribute": "artisan_traditional_craft",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-SEC-004",
+            "Q-QC-005"
+          ]
+        },
+        {
+          "action": "unlock_module",
+          "module": "SKL"
+        }
+      ],
+      "rationale": "Traditional artisans route to Vishwakarma-family schemes with built-in training and toolkit support."
+    },
+    {
+      "rule_id": "BR-060",
+      "name": "Hiring plans unlock incentive-qualifying detail",
+      "priority": 40,
+      "when": {
+        "all": [
+          {
+            "attribute": "planned_new_hires_12m",
+            "operator": "IN",
+            "values": [
+              "1_5",
+              "6_20",
+              "21_100",
+              "over_100"
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "unlock_questions",
+          "question_ids": [
+            "Q-EMP-006",
+            "Q-EMP-011",
+            "Q-EMP-012"
+          ]
+        }
+      ],
+      "rationale": "EPFO status, wage band, and first-time-formal status decide employment-incentive eligibility."
+    }
+  ],
+  "elimination_rules": [
+    {
+      "rule_id": "EL-001",
+      "name": "Non-citizen scope restriction",
+      "when": {
+        "all": [
+          {
+            "attribute": "is_indian_citizen",
+            "operator": "EQ",
+            "value": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "prune_scheme_tags",
+          "tags": [
+            "credit",
+            "subsidy",
+            "msme",
+            "startup",
+            "social_welfare",
+            "agriculture",
+            "women_entrepreneurship",
+            "employment_incentive",
+            "skilling"
+          ]
+        },
+        {
+          "action": "flag_profile",
+          "flag": "citizenship_restricted",
+          "user_message": "Most Indian government schemes require Indian citizenship. We will still show the few programmes open to foreign nationals and OCI holders."
+        }
+      ],
+      "severity": "hard",
+      "rationale": "Citizenship is a hard disqualifier for the vast majority of schemes."
+    },
+    {
+      "rule_id": "EL-002",
+      "name": "Negative-list activity exclusion",
+      "when": {
+        "all": [
+          {
+            "attribute": "negative_list_activity",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "prune_scheme_tags",
+          "tags": [
+            "subsidy",
+            "capex_subsidy",
+            "guarantee",
+            "msme",
+            "startup"
+          ]
+        },
+        {
+          "action": "flag_profile",
+          "flag": "negative_list",
+          "user_message": "Tobacco, alcohol, and gambling businesses are excluded from most subsidy and guarantee schemes. Regular bank credit and a few state incentives may still apply."
+        }
+      ],
+      "severity": "hard",
+      "rationale": "Statutory negative lists exclude these activities from margin-money and guarantee schemes."
+    },
+    {
+      "rule_id": "EL-003",
+      "name": "Government employee self-employment exclusion",
+      "when": {
+        "all": [
+          {
+            "attribute": "occupation_current",
+            "operator": "EQ",
+            "value": "salaried_govt"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "prune_scheme_tags",
+          "tags": [
+            "self_employment_subsidy"
+          ]
+        },
+        {
+          "action": "flag_profile",
+          "flag": "govt_employee",
+          "user_message": "Serving government employees are typically ineligible for self-employment subsidy schemes, though family members may apply independently."
+        }
+      ],
+      "severity": "hard",
+      "rationale": "Service conduct rules bar serving employees from self-employment scheme benefits."
+    },
+    {
+      "rule_id": "EL-004",
+      "name": "NPA account fresh-credit restriction",
+      "when": {
+        "all": [
+          {
+            "attribute": "loan_repayment_status",
+            "operator": "EQ",
+            "value": "npa"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "prune_scheme_tags",
+          "tags": [
+            "credit",
+            "guarantee"
+          ]
+        },
+        {
+          "action": "boost_scheme_tags",
+          "tags": [
+            "revival_restructuring"
+          ]
+        },
+        {
+          "action": "flag_profile",
+          "flag": "npa_revival_path",
+          "user_message": "With an NPA classification, fresh institutional credit is restricted. Revival and restructuring frameworks exist precisely for this situation, and we will prioritise them."
+        }
+      ],
+      "severity": "hard",
+      "rationale": "Banks cannot extend fresh guaranteed credit to NPA accounts; routing to revival schemes converts a dead end into a path."
+    },
+    {
+      "rule_id": "EL-005",
+      "name": "Minor applicant restriction",
+      "when": {
+        "all": [
+          {
+            "attribute": "age_years",
+            "operator": "LT",
+            "value": 18
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "prune_scheme_tags",
+          "tags": [
+            "credit",
+            "subsidy",
+            "msme",
+            "startup",
+            "guarantee",
+            "self_employment_subsidy"
+          ]
+        },
+        {
+          "action": "flag_profile",
+          "flag": "minor_applicant",
+          "user_message": "Scheme applications require the applicant to be at least 18. We can show scholarship and skilling programmes now, and everything else will be ready the moment you are."
+        }
+      ],
+      "severity": "hard",
+      "rationale": "Contractual capacity requires majority age."
+    },
+    {
+      "rule_id": "EL-006",
+      "name": "Trading exclusion for manufacturing-only subsidies",
+      "when": {
+        "all": [
+          {
+            "attribute": "primary_sector",
+            "operator": "EQ",
+            "value": "trading"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "prune_scheme_tags",
+          "tags": [
+            "capex_subsidy",
+            "technology_upgrade"
+          ]
+        },
+        {
+          "action": "flag_profile",
+          "flag": "trading_profile",
+          "user_message": "Pure trading businesses are excluded from manufacturing capital subsidies, but credit, guarantee, and digital-commerce schemes remain fully open."
+        }
+      ],
+      "severity": "soft",
+      "rationale": "Manufacturing-linked capital subsidies exclude trading; framed positively toward the families that remain open."
+    },
+    {
+      "rule_id": "EL-007",
+      "name": "Prior subsidy double-dip check",
+      "when": {
+        "all": [
+          {
+            "attribute": "previous_subsidy_received",
+            "operator": "EQ",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "flag_profile",
+          "flag": "double_dip_check",
+          "user_message": "Since this unit has received a capital subsidy before, we will check each recommendation's stacking rules and flag any that bar a second benefit on the same assets."
+        }
+      ],
+      "severity": "advisory",
+      "rationale": "Not an elimination: a per-scheme stacking check performed downstream by the deterministic rule engine."
+    }
+  ],
+  "validation_rules": [
+    {
+      "rule_id": "VR-001",
+      "name": "Women employees cannot exceed total",
+      "type": "cross_field",
+      "check": {
+        "attribute": "women_employees_count",
+        "operator": "LTE",
+        "compare_to_attribute": "current_employees_total"
+      },
+      "on_fail": {
+        "severity": "error",
+        "user_message": "The number of women employees cannot exceed your total headcount. Mind updating one of the two?",
+        "re_ask_question_ids": [
+          "Q-EMP-001",
+          "Q-EMP-002"
+        ]
+      }
+    },
+    {
+      "rule_id": "VR-002",
+      "name": "SC/ST employees cannot exceed total",
+      "type": "cross_field",
+      "check": {
+        "attribute": "sc_st_employees_count",
+        "operator": "LTE",
+        "compare_to_attribute": "current_employees_total"
+      },
+      "on_fail": {
+        "severity": "error",
+        "user_message": "SC/ST employee count cannot exceed total headcount. Please recheck.",
+        "re_ask_question_ids": [
+          "Q-EMP-001",
+          "Q-EMP-003"
+        ]
+      }
+    },
+    {
+      "rule_id": "VR-003",
+      "name": "Incorporation year sanity",
+      "type": "single_field",
+      "check": {
+        "attribute": "incorporation_year",
+        "operator": "BETWEEN",
+        "values": [
+          1950,
+          2026
+        ]
+      },
+      "on_fail": {
+        "severity": "error",
+        "user_message": "That year looks off. Could you re-enter it?",
+        "re_ask_question_ids": [
+          "Q-BUS-003"
+        ]
+      }
+    },
+    {
+      "rule_id": "VR-004",
+      "name": "Loan within project cost",
+      "type": "cross_field",
+      "check": {
+        "attribute": "loan_amount_required",
+        "operator": "LTE",
+        "compare_to_attribute": "total_project_cost"
+      },
+      "on_fail": {
+        "severity": "warning",
+        "user_message": "Your loan requirement exceeds the total project cost you mentioned. That is unusual. Want to revisit either number?",
+        "re_ask_question_ids": [
+          "Q-CRD-002",
+          "Q-CAP-008"
+        ]
+      }
+    },
+    {
+      "rule_id": "VR-005",
+      "name": "Machinery within project cost",
+      "type": "cross_field",
+      "check": {
+        "attribute": "machinery_cost_estimate",
+        "operator": "LTE",
+        "compare_to_attribute": "total_project_cost"
+      },
+      "on_fail": {
+        "severity": "warning",
+        "user_message": "Machinery cost appears larger than total project cost. One of these may need a second look.",
+        "re_ask_question_ids": [
+          "Q-CAP-002",
+          "Q-CAP-008"
+        ]
+      }
+    },
+    {
+      "rule_id": "VR-006",
+      "name": "Export share consistent with export status",
+      "type": "conditional_consistency",
+      "check": {
+        "if": [
+          {
+            "attribute": "export_status",
+            "operator": "IN",
+            "values": [
+              "ready_to_start",
+              "curious"
+            ]
+          }
+        ],
+        "then": {
+          "attribute": "export_turnover_share",
+          "operator": "IN",
+          "values": [
+            "zero_yet"
+          ]
+        }
+      },
+      "on_fail": {
+        "severity": "warning",
+        "user_message": "You mentioned not exporting yet, but recorded export turnover. Shall we correct one?",
+        "re_ask_question_ids": [
+          "Q-EXP-001",
+          "Q-EXP-003"
+        ]
+      }
+    },
+    {
+      "rule_id": "VR-007",
+      "name": "Udyam classification consistency",
+      "type": "conditional_consistency",
+      "check": {
+        "if": [
+          {
+            "attribute": "udyam_classification_shown",
+            "operator": "IN",
+            "values": [
+              "micro",
+              "small",
+              "medium"
+            ]
+          }
+        ],
+        "then": {
+          "attribute": "msme_classification",
+          "operator": "EQ",
+          "compare_to_attribute": "udyam_classification_shown"
+        }
+      },
+      "on_fail": {
+        "severity": "advisory",
+        "user_message": "Your investment and turnover figures suggest a different MSME class than your Udyam certificate shows. This can happen after growth. Your certificate may simply need updating, and we will note which class each scheme uses.",
+        "re_ask_question_ids": [
+          "Q-MSME-001",
+          "Q-MSME-002"
+        ]
+      }
+    },
+    {
+      "rule_id": "VR-008",
+      "name": "Turnover figure plausibility vs revenue band",
+      "type": "cross_field_band",
+      "check": {
+        "attribute": "annual_turnover_inr",
+        "operator": "CONSISTENT_WITH_BAND",
+        "compare_to_attribute": "monthly_revenue_band",
+        "tolerance_note": "annual figure should fall within 0.4x to 3x of 12 times the midpoint of the stated monthly band"
+      },
+      "on_fail": {
+        "severity": "advisory",
+        "user_message": "Your annual turnover and monthly revenue estimates do not quite line up. No problem, but which one should we trust for matching?",
+        "re_ask_question_ids": [
+          "Q-MSME-002",
+          "Q-BUS-013"
+        ]
+      }
+    }
+  ],
+  "ig_configuration": {
+    "algorithm": "shannon_information_gain",
+    "objective": "argmax_q [ H(S) - E[ H(S | answer(q)) ] ] over unanswered, unlocked, non-suppressed questions",
+    "eligibility_distribution": {
+      "initialisation": "uniform over active scheme set filtered by pruned tags",
+      "update": "bayesian_rule_elimination after every recorded answer",
+      "storage": "per-session, persisted in PostgreSQL session state"
+    },
+    "candidate_pool_definition": "questions whose visibility is root, or unlocked by a satisfied branch rule, and not suppressed by any equal-or-higher-priority rule",
+    "tiebreakers_in_order": [
+      {
+        "order": 1,
+        "criterion": "lower_cognitive_complexity",
+        "source_field": "cognitive_complexity"
+      },
+      {
+        "order": 2,
+        "criterion": "lower_sensitivity_level",
+        "source_field": "sensitivity_level"
+      },
+      {
+        "order": 3,
+        "criterion": "higher_cross_scheme_coverage",
+        "source_field": "ig_metadata.scheme_coverage_tags"
+      }
+    ],
+    "ig_tie_threshold_bits": 0.01,
+    "module_coherence_bonus": {
+      "description": "questions from the currently active module receive a small additive bonus to avoid jarring topic switches (chunking principle); the bonus can never outrank a question whose raw IG exceeds the in-module best by more than the bonus itself",
+      "bonus_bits": 0.05
+    },
+    "sensitivity_deferral": {
+      "description": "sensitivity_level 3 questions are deferred until at least 4 questions have been answered and trust is established, unless their IG exceeds all alternatives by the override margin",
+      "min_questions_before_sensitive": 4,
+      "override_ig_margin_bits": 0.5
+    },
+    "performance_budget": {
+      "selection_latency_ms_p95": 15,
+      "reference": "SRS AI-001"
+    }
+  },
+  "completion_rules": [
+    {
+      "rule_id": "CR-001",
+      "name": "Entropy convergence stop",
+      "condition": {
+        "all": [
+          {
+            "attribute": "session_metric.eligibility_entropy_bits",
+            "operator": "LTE",
+            "value": 0.5
+          },
+          {
+            "attribute": "session_metric.questions_answered",
+            "operator": "GTE",
+            "value": 8
+          }
+        ]
+      },
+      "action": "transition_to_confidence_checkpoint",
+      "rationale": "Below 0.5 bits of residual uncertainty, further questions barely move recommendations."
+    },
+    {
+      "rule_id": "CR-002",
+      "name": "Maximum question ceiling",
+      "condition": {
+        "all": [
+          {
+            "attribute": "session_metric.questions_answered",
+            "operator": "GTE",
+            "value": 25
+          }
+        ]
+      },
+      "action": "transition_to_confidence_checkpoint",
+      "rationale": "Fatigue guardrail: past 25 questions, completion risk outweighs marginal accuracy (decision fatigue reduction)."
+    },
+    {
+      "rule_id": "CR-003",
+      "name": "Diminishing-returns stop",
+      "condition": {
+        "all": [
+          {
+            "attribute": "session_metric.max_remaining_ig_bits",
+            "operator": "LTE",
+            "value": 0.05
+          },
+          {
+            "attribute": "session_metric.questions_answered",
+            "operator": "GTE",
+            "value": 6
+          }
+        ]
+      },
+      "action": "transition_to_confidence_checkpoint",
+      "rationale": "If no remaining question can meaningfully reduce uncertainty, stop. Never ask questions that do not improve recommendation quality."
+    },
+    {
+      "rule_id": "CR-004",
+      "name": "Minimum viable profile guard",
+      "condition": {
+        "all": [
+          {
+            "attribute": "primary_objective",
+            "operator": "IS_ANSWERED"
+          },
+          {
+            "attribute": "applicant_type",
+            "operator": "IS_ANSWERED"
+          },
+          {
+            "attribute": "state",
+            "operator": "IS_ANSWERED"
+          }
+        ]
+      },
+      "action": "permit_early_exit_with_partial_recommendations",
+      "rationale": "With objective, applicant type, and state known, a useful lower-confidence recommendation set exists; users who must leave early still get value (peak-end rule)."
+    }
+  ],
+  "engagement_rules": [
+    {
+      "rule_id": "EN-001",
+      "name": "Progress milestone acknowledgements",
+      "trigger": {
+        "session_metric": "questions_answered",
+        "at_values": [
+          5,
+          10,
+          18
+        ]
+      },
+      "action": "show_micro_reward",
+      "messages": [
+        "You are ahead of most applicants already. Your profile is taking real shape.",
+        "Over halfway. Your matches are narrowing down nicely.",
+        "Final stretch. Every answer now is fine-tuning, not filtering."
+      ],
+      "principles": [
+        "goal_gradient_effect",
+        "micro_rewards",
+        "progress_psychology"
+      ]
+    },
+    {
+      "rule_id": "EN-002",
+      "name": "Live match counter",
+      "trigger": {
+        "event": "eligibility_distribution_updated"
+      },
+      "action": "update_match_indicator",
+      "display_logic": "show count of schemes with eligibility probability >= 0.4 as opportunities still in play; never frame a decreasing count as a loss, frame it as narrowing to your best fits",
+      "principles": [
+        "curiosity_gap",
+        "variable_reinforcement",
+        "emotional_design"
+      ]
+    },
+    {
+      "rule_id": "EN-003",
+      "name": "Answer recall reflection",
+      "trigger": {
+        "event": "module_entered"
+      },
+      "action": "contextual_bridge_message",
+      "display_logic": "reference one earlier answer when opening a new module, for example: Since you mentioned exporting garments, a quick look at certifications.",
+      "principles": [
+        "conversational_memory",
+        "trust_formation",
+        "cognitive_ease"
+      ]
+    },
+    {
+      "rule_id": "EN-004",
+      "name": "Fatigue detection and encouragement",
+      "trigger": {
+        "session_metric": "seconds_since_last_answer",
+        "operator": "GTE",
+        "value": 45
+      },
+      "action": "adaptive_encouragement",
+      "display_logic": "offer save-and-continue-later plus a one-line reminder of what is already unlocked; never guilt-trip",
+      "principles": [
+        "adaptive_encouragement",
+        "flow_state",
+        "peak_end_rule"
+      ]
+    }
+  ]
+}

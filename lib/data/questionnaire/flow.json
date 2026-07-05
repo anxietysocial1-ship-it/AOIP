@@ -1,0 +1,1011 @@
+{
+  "metadata": {
+    "artifact": "flow.json",
+    "version": "1.0.0",
+    "generated_for": "AOIP Applicant Intelligence Engine",
+    "depends_on": {
+      "questions": "questions.json v1.0.0",
+      "rules": "rules.json v1.0.0"
+    },
+    "machine_type": "deterministic_finite_state_machine",
+    "state_persistence": "PostgreSQL interview_session (authoritative); the FSM holds no state of its own — database primacy",
+    "transition_semantics": "transitions evaluated in ascending priority; first transition whose guard rules are satisfied and whose condition evaluates true is taken; a transition with neither guard nor condition is the default",
+    "global_interrupts": [
+      {
+        "event": "user_pauses",
+        "target_state": "S-900-PAUSED",
+        "available_from": "any non-terminal state"
+      },
+      {
+        "event": "user_requests_exit",
+        "target_state": "S-910-EARLY-EXIT",
+        "available_from": "any non-terminal state"
+      },
+      {
+        "event": "inactivity_timeout_seconds_600",
+        "target_state": "S-900-PAUSED",
+        "available_from": "any non-terminal state"
+      }
+    ],
+    "progress_model": "progress_range is a display band per state; within adaptive states, progress interpolates on entropy reduction (initial_entropy - current_entropy) / initial_entropy, never on raw question count, so progress can only move forward (progress psychology)"
+  },
+  "initial_state": "S-000-WELCOME",
+  "terminal_states": [
+    "S-120-COMPLETE"
+  ],
+  "states": [
+    {
+      "state_id": "S-000-WELCOME",
+      "type": "system",
+      "purpose": "Set the premium-advisor frame: what AOIP will do, how long it takes, and that answers stay private. No questions asked here.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "display_message",
+          "content": "In about 10 to 15 questions, I will map every government opportunity you qualify for, with a confidence score and a document checklist for each. Nothing you share leaves your profile. Ready?"
+        },
+        {
+          "action": "initialise_session"
+        },
+        {
+          "action": "initialise_eligibility_distribution",
+          "per": "rules.ig_configuration.eligibility_distribution"
+        }
+      ],
+      "exit_conditions": [
+        "user_acknowledges"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-010-OBJECTIVE",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "trust_formation",
+        "cognitive_ease",
+        "commitment_consistency"
+      ],
+      "progress_range": [
+        0,
+        2
+      ]
+    },
+    {
+      "state_id": "S-010-OBJECTIVE",
+      "type": "question_module",
+      "purpose": "Open with the user's goal, never demographics. The objective seeds the eligibility distribution and unlocks the first branches.",
+      "question_source": {
+        "mode": "fixed_sequence",
+        "module": "OBJ",
+        "mandatory_question_ids": [
+          "Q-OBJ-001"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 4
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-020-APPLICANT",
+          "priority": 1,
+          "condition": {
+            "all": [
+              {
+                "attribute": "primary_objective",
+                "operator": "IS_ANSWERED"
+              }
+            ]
+          }
+        }
+      ],
+      "psychology": [
+        "goal_gradient_effect",
+        "intrinsic_motivation",
+        "curiosity_gap"
+      ],
+      "progress_range": [
+        2,
+        15
+      ]
+    },
+    {
+      "state_id": "S-020-APPLICANT",
+      "type": "question_module",
+      "purpose": "Establish who is asking (applicant type, citizenship, age) — the second great branching axis after the objective.",
+      "question_source": {
+        "mode": "fixed_sequence",
+        "module": "APP",
+        "mandatory_question_ids": [
+          "Q-APP-001",
+          "Q-APP-004",
+          "Q-APP-006"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 5
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules",
+            "elimination_rules",
+            "derivation_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-025-RESTRICTED-NOTICE",
+          "priority": 1,
+          "guard_rule_ids": [
+            "EL-001",
+            "EL-005"
+          ],
+          "condition": {
+            "any": [
+              {
+                "attribute": "is_indian_citizen",
+                "operator": "EQ",
+                "value": false
+              },
+              {
+                "attribute": "age_years",
+                "operator": "LT",
+                "value": 18
+              }
+            ]
+          },
+          "note": "Hard-restriction path: be honest early, salvage what remains."
+        },
+        {
+          "to_state": "S-030-LOCATION",
+          "priority": 2
+        }
+      ],
+      "psychology": [
+        "progressive_disclosure",
+        "cognitive_ease"
+      ],
+      "progress_range": [
+        15,
+        28
+      ]
+    },
+    {
+      "state_id": "S-025-RESTRICTED-NOTICE",
+      "type": "system",
+      "purpose": "Transparently explain a hard restriction (citizenship or age) while keeping the surviving opportunity set alive. Honesty here builds more trust than a dead-end at the finish would.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "display_flag_messages",
+          "source": "elimination_rules"
+        }
+      ],
+      "exit_conditions": [
+        "user_acknowledges"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-030-LOCATION",
+          "priority": 1,
+          "condition": {
+            "all": [
+              {
+                "attribute": "session_metric.active_scheme_count",
+                "operator": "GT",
+                "value": 0
+              }
+            ]
+          },
+          "note": "Some opportunities survive pruning — continue with the reduced set."
+        },
+        {
+          "to_state": "S-100-REVIEW",
+          "priority": 2,
+          "condition": {
+            "all": [
+              {
+                "attribute": "session_metric.active_scheme_count",
+                "operator": "EQ",
+                "value": 0
+              }
+            ]
+          },
+          "note": "Nothing survives — close gracefully with guidance rather than a hollow interview."
+        }
+      ],
+      "psychology": [
+        "trust_formation",
+        "emotional_design"
+      ],
+      "progress_range": [
+        28,
+        30
+      ]
+    },
+    {
+      "state_id": "S-030-LOCATION",
+      "type": "question_module",
+      "purpose": "Anchor state and area type: state schemes stack on central ones, and rural or aspirational locations change subsidy rates.",
+      "question_source": {
+        "mode": "fixed_sequence",
+        "module": "LOC",
+        "mandatory_question_ids": [
+          "Q-LOC-001",
+          "Q-LOC-003"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 4
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "derivation_rules",
+            "branch_rules"
+          ]
+        },
+        {
+          "action": "contextual_bridge_message",
+          "per": "rules.engagement_rules.EN-003"
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-040-PROFILE-ROUTER",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "recognition_over_recall",
+        "cognitive_ease"
+      ],
+      "progress_range": [
+        30,
+        40
+      ]
+    },
+    {
+      "state_id": "S-040-PROFILE-ROUTER",
+      "type": "decision",
+      "purpose": "Pure routing state (no questions): dispatch to the right foundation track based on applicant type and business stage.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "routed"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-050-BUSINESS-FOUNDATION",
+          "priority": 1,
+          "guard_rule_ids": [
+            "BR-001"
+          ],
+          "condition": {
+            "all": [
+              {
+                "attribute": "applicant_type",
+                "operator": "IN",
+                "values": [
+                  "business_owner",
+                  "business_representative"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "to_state": "S-055-NEW-VENTURE",
+          "priority": 2,
+          "guard_rule_ids": [
+            "BR-002"
+          ],
+          "condition": {
+            "all": [
+              {
+                "attribute": "applicant_type",
+                "operator": "EQ",
+                "value": "aspiring_entrepreneur"
+              }
+            ]
+          }
+        },
+        {
+          "to_state": "S-056-FARMER-FOUNDATION",
+          "priority": 3,
+          "guard_rule_ids": [
+            "BR-003"
+          ],
+          "condition": {
+            "all": [
+              {
+                "attribute": "applicant_type",
+                "operator": "EQ",
+                "value": "farmer"
+              }
+            ]
+          }
+        },
+        {
+          "to_state": "S-057-RESEARCH-FOUNDATION",
+          "priority": 4,
+          "guard_rule_ids": [
+            "BR-004",
+            "BR-005"
+          ],
+          "condition": {
+            "all": [
+              {
+                "attribute": "applicant_type",
+                "operator": "IN",
+                "values": [
+                  "researcher",
+                  "student"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "to_state": "S-058-SOCIAL-FOUNDATION",
+          "priority": 5,
+          "guard_rule_ids": [
+            "BR-006"
+          ],
+          "condition": {
+            "all": [
+              {
+                "attribute": "applicant_type",
+                "operator": "EQ",
+                "value": "ngo_social"
+              }
+            ]
+          }
+        },
+        {
+          "to_state": "S-060-ADAPTIVE",
+          "priority": 6,
+          "guard_rule_ids": [
+            "BR-007"
+          ],
+          "note": "Individual explorers go straight to the adaptive loop over demographic and skilling questions."
+        }
+      ],
+      "psychology": [
+        "progressive_disclosure"
+      ],
+      "progress_range": [
+        40,
+        40
+      ]
+    },
+    {
+      "state_id": "S-050-BUSINESS-FOUNDATION",
+      "type": "question_module",
+      "purpose": "Operating-business anchor facts: stage, constitution, sector, and the two numbers that derive MSME classification.",
+      "question_source": {
+        "mode": "hybrid",
+        "modules": [
+          "BUS",
+          "SEC",
+          "MSME"
+        ],
+        "mandatory_question_ids": [
+          "Q-BUS-001",
+          "Q-BUS-002",
+          "Q-SEC-001",
+          "Q-MSME-001",
+          "Q-MSME-002"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 9
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules",
+            "derivation_rules",
+            "validation_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered_or_suppressed"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-060-ADAPTIVE",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "chunking",
+        "conversational_memory",
+        "micro_rewards"
+      ],
+      "progress_range": [
+        40,
+        55
+      ]
+    },
+    {
+      "state_id": "S-055-NEW-VENTURE",
+      "type": "question_module",
+      "purpose": "Idea-stage foundation: planned sector and stage without any operational-history questions (suppressed by BR-048).",
+      "question_source": {
+        "mode": "hybrid",
+        "modules": [
+          "BUS",
+          "SEC",
+          "DEM"
+        ],
+        "mandatory_question_ids": [
+          "Q-BUS-001",
+          "Q-SEC-001",
+          "Q-DEM-018"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 7
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules",
+            "derivation_rules",
+            "elimination_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered_or_suppressed"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-060-ADAPTIVE",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "emotional_design",
+        "adaptive_encouragement",
+        "trust_formation"
+      ],
+      "progress_range": [
+        40,
+        55
+      ]
+    },
+    {
+      "state_id": "S-056-FARMER-FOUNDATION",
+      "type": "question_module",
+      "purpose": "Farmer anchor facts: farming status, land holding (drives farmer_category), and processing intent.",
+      "question_source": {
+        "mode": "hybrid",
+        "modules": [
+          "AGR",
+          "DEM"
+        ],
+        "mandatory_question_ids": [
+          "Q-AGR-001",
+          "Q-AGR-002"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 7
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules",
+            "derivation_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered_or_suppressed"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-060-ADAPTIVE",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "recognition_over_recall",
+        "trust_formation"
+      ],
+      "progress_range": [
+        40,
+        55
+      ]
+    },
+    {
+      "state_id": "S-057-RESEARCH-FOUNDATION",
+      "type": "question_module",
+      "purpose": "Researcher anchor facts: position, institution, and commercialisation intent (which may bridge into the startup track via BR-057).",
+      "question_source": {
+        "mode": "hybrid",
+        "modules": [
+          "RES"
+        ],
+        "mandatory_question_ids": [
+          "Q-RES-001",
+          "Q-RES-002",
+          "Q-RES-006"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 6
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered_or_suppressed"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-060-ADAPTIVE",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "flow_state",
+        "intrinsic_motivation"
+      ],
+      "progress_range": [
+        40,
+        55
+      ]
+    },
+    {
+      "state_id": "S-058-SOCIAL-FOUNDATION",
+      "type": "question_module",
+      "purpose": "Social-organisation anchor facts: entity form, statutory registrations, and funding route (grant vs CSR).",
+      "question_source": {
+        "mode": "hybrid",
+        "modules": [
+          "SOC"
+        ],
+        "mandatory_question_ids": [
+          "Q-SOC-001",
+          "Q-SOC-002"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 6
+      },
+      "entry_actions": [
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered_or_suppressed"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-060-ADAPTIVE",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "trust_formation",
+        "emotional_design"
+      ],
+      "progress_range": [
+        40,
+        55
+      ]
+    },
+    {
+      "state_id": "S-060-ADAPTIVE",
+      "type": "adaptive_loop",
+      "purpose": "The heart of the engine: pure information-gain question selection over every unlocked, non-suppressed question, until a completion rule fires.",
+      "question_source": {
+        "mode": "information_gain",
+        "candidate_modules": [
+          "OBJ",
+          "APP",
+          "DEM",
+          "LOC",
+          "BUS",
+          "MSME",
+          "FIN",
+          "SEC",
+          "EMP",
+          "EXP",
+          "CAP",
+          "CRD",
+          "TEC",
+          "QC",
+          "STA",
+          "WOM",
+          "AGR",
+          "GRN",
+          "SKL",
+          "RES",
+          "SOC"
+        ],
+        "selection_config_ref": "rules.ig_configuration",
+        "max_questions_in_state": 14
+      },
+      "entry_actions": [
+        {
+          "action": "show_micro_reward",
+          "per": "rules.engagement_rules.EN-001"
+        },
+        {
+          "action": "update_match_indicator",
+          "per": "rules.engagement_rules.EN-002"
+        }
+      ],
+      "loop_actions_per_answer": [
+        {
+          "action": "record_answer"
+        },
+        {
+          "action": "update_eligibility_distribution"
+        },
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "branch_rules",
+            "derivation_rules",
+            "elimination_rules",
+            "validation_rules",
+            "completion_rules"
+          ]
+        },
+        {
+          "action": "select_next_question",
+          "per": "rules.ig_configuration"
+        }
+      ],
+      "exit_conditions": [
+        "completion_rule_fired"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-070-CONFIDENCE",
+          "priority": 1,
+          "guard_rule_ids": [
+            "CR-001",
+            "CR-002",
+            "CR-003"
+          ]
+        }
+      ],
+      "psychology": [
+        "flow_state",
+        "variable_reinforcement",
+        "curiosity_gap",
+        "decision_fatigue_reduction"
+      ],
+      "progress_range": [
+        55,
+        80
+      ]
+    },
+    {
+      "state_id": "S-070-CONFIDENCE",
+      "type": "system",
+      "purpose": "Confidence checkpoint: surface any high-impact UNCERTAIN attribute (hard-disqualifier uncertainty costs 0.20 confidence downstream) and offer, never force, resolving it.",
+      "question_source": {
+        "mode": "targeted_uncertainty",
+        "selection": "up_to_2_questions_whose_answers_remove_hard_disqualifier_uncertainty",
+        "user_may_skip": true,
+        "max_questions_in_state": 2
+      },
+      "entry_actions": [
+        {
+          "action": "display_message",
+          "content": "One or two answers came in as not sure. Pinning them down would raise your recommendation confidence — happy to skip if you prefer."
+        }
+      ],
+      "exit_conditions": [
+        "resolved_or_skipped"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-080-DOCUMENTS",
+          "priority": 1,
+          "guard_rule_ids": [
+            "BR-058"
+          ]
+        }
+      ],
+      "psychology": [
+        "choice_architecture",
+        "trust_formation"
+      ],
+      "progress_range": [
+        80,
+        85
+      ]
+    },
+    {
+      "state_id": "S-080-DOCUMENTS",
+      "type": "question_module",
+      "purpose": "Rapid-fire document readiness: easy yes-no wins near the end (peak-end rule) that directly populate each recommendation's checklist.",
+      "question_source": {
+        "mode": "fixed_sequence",
+        "module": "DOC",
+        "mandatory_question_ids": [
+          "Q-DOC-001",
+          "Q-DOC-002",
+          "Q-DOC-003"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 6
+      },
+      "entry_actions": [
+        {
+          "action": "display_message",
+          "content": "Last lap — a 30-second document check so your checklist arrives pre-sorted into ready and to-arrange."
+        }
+      ],
+      "exit_conditions": [
+        "mandatory_answered"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-090-PREFERENCES",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "peak_end_rule",
+        "goal_gradient_effect",
+        "chunking"
+      ],
+      "progress_range": [
+        85,
+        92
+      ]
+    },
+    {
+      "state_id": "S-090-PREFERENCES",
+      "type": "question_module",
+      "purpose": "Ranking preferences and consent: how to order recommendations and whether to alert on future matches.",
+      "question_source": {
+        "mode": "fixed_sequence",
+        "module": "PRF",
+        "mandatory_question_ids": [
+          "Q-PRF-001",
+          "Q-PRF-006"
+        ],
+        "optional_by_ig": true,
+        "max_questions_in_state": 4
+      },
+      "entry_actions": [],
+      "exit_conditions": [
+        "mandatory_answered"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-100-REVIEW",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "choice_architecture",
+        "peak_end_rule"
+      ],
+      "progress_range": [
+        92,
+        96
+      ]
+    },
+    {
+      "state_id": "S-100-REVIEW",
+      "type": "system",
+      "purpose": "One-screen profile summary with inline edit; the last honest checkpoint before recommendations are computed.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "display_profile_summary",
+          "editable": true
+        },
+        {
+          "action": "evaluate_rules",
+          "rule_groups": [
+            "validation_rules"
+          ]
+        }
+      ],
+      "exit_conditions": [
+        "user_confirms"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-060-ADAPTIVE",
+          "priority": 1,
+          "condition": {
+            "all": [
+              {
+                "attribute": "session_metric.edits_made_requiring_reselection",
+                "operator": "EQ",
+                "value": true
+              }
+            ]
+          },
+          "note": "An edited answer can reopen the distribution — loop back briefly if entropy rises above threshold."
+        },
+        {
+          "to_state": "S-110-HANDOFF",
+          "priority": 2
+        }
+      ],
+      "psychology": [
+        "commitment_consistency",
+        "trust_formation"
+      ],
+      "progress_range": [
+        96,
+        98
+      ]
+    },
+    {
+      "state_id": "S-110-HANDOFF",
+      "type": "system",
+      "purpose": "Hand the completed, validated attribute set to the deterministic rule engine. The interview engine's job ends here — it never computes eligibility itself.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "persist_session",
+          "store": "postgresql"
+        },
+        {
+          "action": "publish_event",
+          "event": "SessionCompleted",
+          "payload": [
+            "session_id",
+            "attribute_set",
+            "derivation_outputs",
+            "profile_flags"
+          ]
+        },
+        {
+          "action": "display_message",
+          "content": "Your profile is complete. Computing your personalised opportunity report with confidence scores and document checklists..."
+        }
+      ],
+      "exit_conditions": [
+        "recommendation_ready_event"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-120-COMPLETE",
+          "priority": 1
+        }
+      ],
+      "psychology": [
+        "peak_end_rule",
+        "curiosity_gap"
+      ],
+      "progress_range": [
+        98,
+        100
+      ]
+    },
+    {
+      "state_id": "S-120-COMPLETE",
+      "type": "terminal",
+      "purpose": "Terminal state: recommendations rendered by the recommendation engine; interview session archived per the 2-year retention policy.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "archive_session"
+        }
+      ],
+      "exit_conditions": [],
+      "transitions": [],
+      "psychology": [
+        "peak_end_rule"
+      ],
+      "progress_range": [
+        100,
+        100
+      ]
+    },
+    {
+      "state_id": "S-900-PAUSED",
+      "type": "global_handler",
+      "purpose": "Save-and-resume: any state can pause; resume restores the exact state, distribution, and a one-line recap of where things stood.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "persist_session",
+          "store": "postgresql"
+        },
+        {
+          "action": "display_message",
+          "content": "Saved. Pick up exactly where you left off any time — your answers and matches are waiting."
+        }
+      ],
+      "exit_conditions": [
+        "user_resumes"
+      ],
+      "transitions": [
+        {
+          "to_state": "RESUME_PREVIOUS_STATE",
+          "priority": 1,
+          "note": "Special directive: the FSM restores the state recorded at pause time and replays a recap via EN-003."
+        }
+      ],
+      "psychology": [
+        "adaptive_encouragement",
+        "conversational_memory"
+      ],
+      "progress_range": null
+    },
+    {
+      "state_id": "S-910-EARLY-EXIT",
+      "type": "global_handler",
+      "purpose": "Graceful early exit: if the minimum viable profile exists (CR-004), offer partial recommendations instead of losing the user entirely.",
+      "question_source": null,
+      "entry_actions": [
+        {
+          "action": "display_message",
+          "content": "Short on time? Based on what you have shared, I can already show a preliminary set of matches — with the caveat that a few more answers would sharpen them."
+        }
+      ],
+      "exit_conditions": [
+        "user_chooses"
+      ],
+      "transitions": [
+        {
+          "to_state": "S-110-HANDOFF",
+          "priority": 1,
+          "guard_rule_ids": [
+            "CR-004"
+          ],
+          "note": "Partial handoff: recommendations flagged lower-confidence per the confidence model."
+        },
+        {
+          "to_state": "S-900-PAUSED",
+          "priority": 2
+        }
+      ],
+      "psychology": [
+        "peak_end_rule",
+        "choice_architecture"
+      ],
+      "progress_range": null
+    }
+  ]
+}
