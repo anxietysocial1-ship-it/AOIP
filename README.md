@@ -1,8 +1,12 @@
-# AOIP — Artificial Opportunity Intelligence Platform
+# GOP — Government Opportunity Platform
 
-The homepage of AOIP: an objective-first experience. Instead of asking
-users to search government schemes, AOIP asks **"What would you like to
+The homepage of GOP: an objective-first experience. Instead of asking
+users to search government schemes, GOP asks **"What would you like to
 achieve?"** and maps the answer to the best opportunities across India.
+
+A disclaimer is shown on the homepage (hero and footer, in all 12
+languages): GOP may make mistakes — users should verify important
+information themselves.
 
 ## Features
 
@@ -28,9 +32,17 @@ achieve?"** and maps the answer to the best opportunities across India.
   validation, document check, preferences, one-screen review with
   inline edit, and completion.
 - **Lead capture** — a contact step (name, email, phone, consent)
-  before completion. Leads are stored in `localStorage` (`aoip.leads`),
-  downloadable as JSON, and emailed to the team inbox via FormSubmit so
-  applicants can be contacted later.
+  before completion. Leads are stored in `localStorage` (`aoip.leads`)
+  and emailed to the team inbox via FormSubmit so applicants can be
+  contacted later.
+- **Admin console** (`/admin`, not linked from the UI, noindex) —
+  gated by an access key; only the admin can download applicant JSON,
+  individually per applicant or in bulk. Applicants have no download
+  option. The key is verified against a SHA-256 hash in
+  `components/admin/admin-console.tsx`; rotate it by replacing the
+  hash. Note: a static site cannot do real authentication — treat the
+  gate as a deterrent and move the console behind server-side auth
+  before scaling.
 
 ## Tech stack
 
@@ -59,7 +71,12 @@ configured in `lib/engine/lead.ts`. FormSubmit sends a one-time
 activation email on the first submission from the live domain — click
 it once and every subsequent lead arrives as a formatted email.
 Regardless of activation, leads are always kept in the visitor's
-`localStorage` and downloadable from the completion screen.
+`localStorage`, where the admin console (`/admin`) can list and export
+them. Note that each browser only holds the leads submitted from it —
+the email inbox is the complete record across all visitors.
+
+(The repository, deploy path and internal storage keys keep the
+original `AOIP`/`aoip` identifiers; all user-facing branding is GOP.)
 
 ## Structure
 

@@ -3,7 +3,6 @@
 import {
   ArrowRight,
   CheckCircle2,
-  Download,
   Info,
   PencilLine,
   Sparkles,
@@ -20,12 +19,11 @@ import type { Question } from "@/lib/data/questionnaire/types";
 import type { AnswerValue } from "@/lib/engine/conditions";
 import {
   buildLead,
-  downloadProfile,
   sendLead,
   storeLeadLocally,
   type LeadContact,
-  type LeadRecord,
 } from "@/lib/engine/lead";
+import { brandText } from "@/lib/utils";
 import {
   computeOutcome,
   mandatoryQuestionsForState,
@@ -72,7 +70,6 @@ export function JourneyExperience() {
   const [noticeAck, setNoticeAck] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const [lead, setLead] = useState<LeadRecord | null>(null);
   const [contactDone, setContactDone] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [milestone, setMilestone] = useState<string | null>(null);
@@ -203,7 +200,7 @@ export function JourneyExperience() {
     const nextAnswers = { ...answers, [question.attribute_key]: value };
     const failure = validateAnswer(question.attribute_key, nextAnswers);
     if (failure) {
-      setValidationError(failure);
+      setValidationError(brandText(failure));
       return;
     }
     setValidationError(null);
@@ -251,12 +248,11 @@ export function JourneyExperience() {
     if (contact.consent) {
       await sendLead(record);
     }
-    setLead(record);
     setContactDone(true);
   };
 
   const finishWithoutContact = () => {
-    setLead(
+    storeLeadLocally(
       buildLead(
         { name: "", email: "", phone: "", consent: false },
         answers,
@@ -321,7 +317,7 @@ export function JourneyExperience() {
             exit={{ opacity: 0 }}
             className="mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-300"
           >
-            {milestone}
+            {brandText(milestone)}
           </motion.p>
         ) : null}
       </AnimatePresence>
@@ -387,7 +383,7 @@ export function JourneyExperience() {
                     key={message}
                     className="rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
                   >
-                    {message}
+                    {brandText(message)}
                   </p>
                 ))}
               </div>
@@ -429,7 +425,7 @@ export function JourneyExperience() {
                       >
                         <span className="min-w-0">
                           <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
-                            {question.question_text}
+                            {brandText(question.question_text)}
                           </span>
                           <span className="mt-0.5 block truncate text-sm font-semibold text-navy-900 dark:text-white">
                             {formatAnswer(question)}
@@ -477,16 +473,6 @@ export function JourneyExperience() {
                 {copy.doneSubtitle}
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                {lead ? (
-                  <button
-                    type="button"
-                    onClick={() => downloadProfile(lead)}
-                    className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-medium text-navy-900 transition-colors hover:border-navy-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:border-white/30"
-                  >
-                    <Download className="h-4 w-4" aria-hidden />
-                    {copy.downloadProfile}
-                  </button>
-                ) : null}
                 <Link
                   href="/"
                   className="inline-flex h-11 items-center gap-2 rounded-full bg-navy-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:bg-saffron-400 dark:text-navy-950 dark:hover:bg-saffron-300"

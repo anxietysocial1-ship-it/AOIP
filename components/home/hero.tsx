@@ -85,6 +85,15 @@ export function Hero() {
             {dictionary.hero.ctaSecondary}
           </a>
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.65 }}
+          className="mx-auto mt-6 max-w-xl text-center text-xs text-slate-400 dark:text-slate-500"
+        >
+          {dictionary.footer.disclaimer}
+        </motion.p>
       </div>
     </section>
   );

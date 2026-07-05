@@ -14,10 +14,10 @@ const en: Dictionary = {
     change: "Choose another",
   },
   hero: {
-    eyebrow: "Artificial Opportunity Intelligence Platform",
+    eyebrow: "Government Opportunity Platform",
     title: "What would you like to achieve?",
     subtitle:
-      "Tell AOIP your objective. Our intelligence engine analyses your profile and maps the best opportunities across India to achieve it.",
+      "Tell GOP your objective. Our intelligence engine analyses your profile and maps the best opportunities across India to achieve it.",
     ctaPrimary: "Start My Opportunity Journey",
     ctaSecondary: "Explore How It Works",
     selectedLabel: "Your objective",
@@ -65,7 +65,7 @@ const en: Dictionary = {
     },
   },
   how: {
-    heading: "How AOIP works",
+    heading: "How GOP works",
     subheading: "From objective to opportunity in four steps.",
     steps: [
       {
@@ -75,10 +75,10 @@ const en: Dictionary = {
       },
       {
         title: "Answer a few intelligent questions",
-        description: "AOIP asks only what matters for your goal.",
+        description: "GOP asks only what matters for your goal.",
       },
       {
-        title: "AOIP analyses opportunities",
+        title: "GOP analyses opportunities",
         description:
           "Our engine evaluates schemes, incentives and programmes across India.",
       },
@@ -123,33 +123,33 @@ const en: Dictionary = {
     heading: "Frequently asked questions",
     items: [
       {
-        q: "Is AOIP a government website?",
-        a: "AOIP is an Artificial Opportunity Intelligence Platform. It helps you achieve your objectives using verified government opportunities.",
+        q: "Is GOP a government website?",
+        a: "GOP is a Government Opportunity Platform. It helps you achieve your objectives using verified government opportunities.",
       },
       {
-        q: "Is AOIP free to use?",
-        a: "Yes. Discovering opportunities on AOIP is free, with no hidden commissions.",
+        q: "Is GOP free to use?",
+        a: "Yes. Discovering opportunities on GOP is free, with no hidden commissions.",
       },
       {
-        q: "Which languages does AOIP support?",
-        a: "AOIP currently supports 12 languages: English, Hindi, Marathi, Punjabi, Gujarati, Bengali, Tamil, Telugu, Kannada, Malayalam, Odia and Assamese.",
+        q: "Which languages does GOP support?",
+        a: "GOP currently supports 12 languages: English, Hindi, Marathi, Punjabi, Gujarati, Bengali, Tamil, Telugu, Kannada, Malayalam, Odia and Assamese.",
       },
       {
         q: "How are recommendations generated?",
-        a: "AOIP analyses your objective and profile against official government documents and explains every recommendation transparently.",
+        a: "GOP analyses your objective and profile against official government documents and explains every recommendation transparently.",
       },
     ],
   },
   cta: {
     heading: "Ready to achieve your objective?",
     subheading:
-      "Tell AOIP what you want to achieve and receive your personalised opportunity roadmap.",
+      "Tell GOP what you want to achieve and receive your personalised opportunity roadmap.",
     button: "Start My Opportunity Journey",
   },
   journey: {
     welcomeTitle: "Your opportunity journey",
     welcomeMessage:
-      "In about 10 to 15 questions, AOIP will map the government opportunities you qualify for — each with a confidence score and a document checklist. Nothing you share leaves your profile.",
+      "In about 10 to 15 questions, GOP will map the government opportunities you qualify for — each with a confidence score and a document checklist. Nothing you share leaves your profile.",
     begin: "Let's begin",
     back: "Back",
     next: "Continue",
@@ -167,7 +167,7 @@ const en: Dictionary = {
     emailLabel: "Email address",
     phoneLabel: "Phone number (optional)",
     consentLabel:
-      "AOIP may contact me about matching opportunities and deadlines.",
+      "GOP may contact me about matching opportunities and deadlines.",
     submit: "Send me my report",
     skipContact: "Skip for now",
     doneTitle: "Your profile is complete!",
@@ -184,7 +184,9 @@ const en: Dictionary = {
     contact: "Contact",
     privacy: "Privacy Policy",
     terms: "Terms of Use",
-    rights: "© 2026 AOIP. All rights reserved.",
+    disclaimer:
+      "Government Opportunity Platform may make mistakes. Kindly verify important information yourself.",
+    rights: "© 2026 GOP. All rights reserved.",
   },
 };
 

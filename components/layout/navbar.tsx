@@ -37,7 +37,7 @@ export function Navbar() {
               <Sparkles className="h-4.5 w-4.5 h-[18px] w-[18px] text-saffron-300 dark:text-navy-950" aria-hidden />
             </span>
             <span className="text-lg font-bold tracking-tight text-navy-900 dark:text-white">
-              AOIP
+              GOP
             </span>
           </a>
 

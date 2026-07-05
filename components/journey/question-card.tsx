@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "@/components/providers/language-provider";
 import type { Question } from "@/lib/data/questionnaire/types";
 import type { AnswerValue } from "@/lib/engine/conditions";
-import { cn } from "@/lib/utils";
+import { brandText, cn } from "@/lib/utils";
 
 interface QuestionCardProps {
   question: Question;
@@ -84,11 +84,11 @@ export function QuestionCard({
         {question.module_name}
       </p>
       <h2 className="mt-3 text-balance text-2xl font-semibold tracking-tight text-navy-900 dark:text-white md:text-3xl">
-        {question.question_text}
+        {brandText(question.question_text)}
       </h2>
       {question.help_text ? (
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          {question.help_text}
+          {brandText(question.help_text)}
         </p>
       ) : null}
 

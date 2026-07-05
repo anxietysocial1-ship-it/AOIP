@@ -6,11 +6,11 @@ import { AppProviders } from "@/components/providers/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AOIP — Artificial Opportunity Intelligence Platform",
+  title: "GOP — Government Opportunity Platform",
   description:
-    "Tell AOIP what you want to achieve. Our intelligence engine analyses your profile and objective to map the best opportunities across India — in 12 languages.",
+    "Tell GOP what you want to achieve. Our intelligence engine analyses your profile and objective to map the best opportunities across India — in 12 languages.",
   keywords: [
-    "AOIP",
+    "GOP",
     "opportunity intelligence",
     "India",
     "MSME",
@@ -20,9 +20,9 @@ export const metadata: Metadata = {
     "women entrepreneurship",
   ],
   openGraph: {
-    title: "AOIP — Artificial Opportunity Intelligence Platform",
+    title: "GOP — Government Opportunity Platform",
     description:
-      "What would you like to achieve? AOIP maps your objective to the best opportunities across India.",
+      "What would you like to achieve? GOP maps your objective to the best opportunities across India.",
     type: "website",
     locale: "en_IN",
   },

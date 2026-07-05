@@ -104,6 +104,7 @@ export interface Dictionary {
     contact: string;
     privacy: string;
     terms: string;
+    disclaimer: string;
     rights: string;
   };
 }

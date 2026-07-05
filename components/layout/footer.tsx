@@ -22,7 +22,7 @@ export function Footer() {
               <Sparkles className="h-4 w-4 text-saffron-300 dark:text-navy-950" aria-hidden />
             </span>
             <span className="text-base font-bold tracking-tight text-navy-900 dark:text-white">
-              AOIP
+              GOP
             </span>
           </div>
           <p className="max-w-xs text-center text-sm text-slate-500 dark:text-slate-400 md:text-left">
@@ -42,7 +42,10 @@ export function Footer() {
           ))}
         </nav>
       </div>
-      <p className="mt-10 text-center text-xs text-slate-400 dark:text-slate-500">
+      <p className="mx-auto mt-10 max-w-2xl text-center text-xs text-slate-400 dark:text-slate-500">
+        {dictionary.footer.disclaimer}
+      </p>
+      <p className="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
         {dictionary.footer.rights}
       </p>
     </footer>

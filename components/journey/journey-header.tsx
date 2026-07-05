@@ -19,7 +19,7 @@ export function JourneyHeader() {
             <Sparkles className="h-[18px] w-[18px] text-saffron-300 dark:text-navy-950" aria-hidden />
           </span>
           <span className="text-lg font-bold tracking-tight text-navy-900 dark:text-white">
-            AOIP
+            GOP
           </span>
         </Link>
         <div className="flex items-center gap-2">

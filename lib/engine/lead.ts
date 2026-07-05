@@ -59,7 +59,7 @@ export async function sendLead(lead: LeadRecord): Promise<boolean> {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
-        _subject: `AOIP lead: ${lead.name} (${lead.primaryObjective || "no objective"})`,
+        _subject: `GOP lead: ${lead.name} (${lead.primaryObjective || "no objective"})`,
         _template: "table",
         name: lead.name,
         email: lead.email,
@@ -77,14 +77,25 @@ export async function sendLead(lead: LeadRecord): Promise<boolean> {
   }
 }
 
-export function downloadProfile(lead: LeadRecord): void {
-  const blob = new Blob([JSON.stringify(lead, null, 2)], {
+/** Read every applicant record captured in this browser. */
+export function readStoredLeads(): LeadRecord[] {
+  try {
+    const raw = window.localStorage.getItem(LEADS_STORAGE_KEY);
+    const parsed = JSON.parse(raw ?? "[]");
+    return Array.isArray(parsed) ? (parsed as LeadRecord[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function downloadJson(data: unknown, filename: string): void {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "aoip-profile.json";
+  anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
 }
